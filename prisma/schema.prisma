@@ -1,0 +1,101 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique @db.VarChar(255)
+  password      String    @db.VarChar(255)
+  name          String    @db.VarChar(100)
+  role          Role      @default(USER)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  orders        Order[]
+  prescriptions Prescription[]
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  name        String   @db.VarChar(100)
+  description String   @db.Text
+  price       Float    @db.Decimal(10, 2)
+  stock       Int      @db.Integer
+  category    Category @relation(fields: [categoryId], references: [id])
+  categoryId  String
+  imageUrl    String?  @db.VarChar(255)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  orderItems  OrderItem[]
+}
+
+model Category {
+  id          String    @id @default(cuid())
+  name        String    @unique @db.VarChar(50)
+  description String?   @db.Text
+  products    Product[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Order {
+  id            String      @id @default(cuid())
+  user          User        @relation(fields: [userId], references: [id])
+  userId        String
+  status        OrderStatus @default(PENDING)
+  total         Float       @db.Decimal(10, 2)
+  items         OrderItem[]
+  prescription  Prescription? @relation(fields: [prescriptionId], references: [id])
+  prescriptionId String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+model OrderItem {
+  id        String   @id @default(cuid())
+  order     Order    @relation(fields: [orderId], references: [id])
+  orderId   String
+  product   Product  @relation(fields: [productId], references: [id])
+  productId String
+  quantity  Int      @db.Integer
+  price     Float    @db.Decimal(10, 2)
+}
+
+model Prescription {
+  id          String   @id @default(cuid())
+  user        User     @relation(fields: [userId], references: [id])
+  userId      String
+  doctorName  String   @db.VarChar(100)
+  diagnosis   String   @db.Text
+  medications String   @db.Text
+  status      PrescriptionStatus @default(PENDING)
+  orders      Order[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+enum Role {
+  USER
+  ADMIN
+  PHARMACIST
+}
+
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  CANCELLED
+}
+
+enum PrescriptionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+} 
